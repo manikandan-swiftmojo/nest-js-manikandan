@@ -6,5 +6,4 @@ export class creteUserDto {
 export class updateUserDto {
   email?: string;
   name?: string;
-  password?: string;
 }

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { creteUserDto } from './create-user-dto';
 import { singUpResponse } from './users';
 import { PrismaService } from 'src/prisma.service';
@@ -35,14 +35,34 @@ export class UsersService {
     }
 
     async update(id: number, updateUserDto: updateUserDto) {
-        return this.prisma.user.update({
-            where: { id },
-            data: updateUserDto,
-        });
+        try {
+            return await this.prisma.user.update({
+                where: { id },  // id is a number
+                data: updateUserDto,
+            });
+        } catch (error) {
+            console.error('Prisma update error:', error);  // Correct log message
+
+            throw new InternalServerErrorException(
+                'Unexpected error during user update: ' + error.message
+            );
+        }
     }
 
     async remove(id: number) {
-        return this.prisma.user.delete({ where: { id } });
-    }
+        try {
+            return await this.prisma.user.delete({
+                where: { id },
+            });
+        } catch (error) {
+            console.error('Prisma delete error:', error);  // ✅ Log full error
 
+            if (error.code === 'P2025') {
+                throw new NotFoundException(`User with id ${id} not found.`);
+            }
+
+            // Throw a more detailed error
+            throw new InternalServerErrorException('Unexpected error during user deletion.' + error);
+        }
+    }
 }
